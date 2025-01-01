@@ -1,0 +1,22 @@
+theme: "tale"
+menus:
+    main:
+    - name: Blog
+      pageRef: /blog
+      weight: 200
+    - name: Potentially Unhinged Ramblings
+      pageRef: /ramblings
+      weight: 250
+    - name: Things I Read
+      weight: 300
+      pageRef: /reading
+    - name: Feedback
+      pageRef: /feedback
+      weight: 400
+    - name: About
+      pageRef: /about
+      weight: 500
+frontmatter:
+  homepage: "/about"
+# sectionPagesMenu: main
+googleAnalytics: "UA-1234567890" # obviously fake, may fix later

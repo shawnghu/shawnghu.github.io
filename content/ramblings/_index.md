@@ -1,0 +1,3 @@
+I don't necessarily endorse all of what's written here. Some of it may be personal, neurotic, or inscrutable to the point of being useless to others, not very well-written or well-thought out, fail to fully elaborate on a point which seems important (and might actually be), randomly end in the middle of a thought, etc.
+
+I don't expect these to have a lot of use to others, but in case anyone with my particular brand of neurosis finds them useful, here they are. Likewise, if someone happens to read them and thinks they have the key to my existence, let me know.
