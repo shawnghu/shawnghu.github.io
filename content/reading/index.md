@@ -6,11 +6,39 @@
 
 [ACX](https://www.astralcodexten.com/), formerly SlateStarCodex, which I won't bother to explain.
 
+** AI blogs: **
+
+[Beren Millidge's blog](https://www.beren.io/). Largely discussion of deeply technical and philosophical AI topics. I appreciate how well he can communicate a nuanced technical distinction and hit on the key constraints/tensions in a problem without being painfully verbose (something that I want to improve at).
+
+[Alex Irpan's blog](https://www.alexirpan.com/). Probably best known for his post about the fundamental problems in RL, there are other nice technical posts on here.
+
+** People I like to follow on LW: ** (for myriad reasons, including for technical AI thought, navel-gazing, miscellaneous new and interesting ideas/topics, or just the way they express ideas)
+
+
+[Sam Marks](https://www.lesswrong.com/users/sam-marks)
+
+[Fabien Roger](https://www.lesswrong.com/users/fabien-roger)
+
+[Kei Nishimura-Gasparian](https://www.lesswrong.com/users/kei-1)
+
+[Garrett Baker](https://www.lesswrong.com/users/d0themath)
+
+[Arun Jose](https://www.lesswrong.com/users/jozdien)
+
+[Leo Gao](https://www.lesswrong.com/users/leogao) (particularly for shortform)
+
+[Ray Arnold](https://www.lesswrong.com/users/raemon)
+
+
 For books in book-format, here's a link to my [GoodReads](https://www.goodreads.com/user/show/176465819-shawn-hu). It's not at all comprehensive, but it's where I've cared to write about books I've read. I will single out a couple of books below for having a disproportionate impact on me:
 
 *Ender's Game*, which was the first work I read where the characters seemed to be thinking realistically and intelligently in a situation with significant moral stakes, and which contained such raw human and emotional elements. It probably helped that the characters were systematically-underestimated child geniuses. The followup book *Speaker for the Dead* was also important to my development as a person as an example of radical empathy and responsibility, and the [less-popular](https://xkcd.com/304/) *Xenocide* helped me with a religious struggle when I first read it; recently I've learned that quite a few people have had similar experiences, [sometimes even with the same book](https://www.tracingwoodgrains.com/p/tracing-woodgrains). These books filled for me a role that I have heard HPMoR did for others I've talked to.
 
 [*Inadequate Equilibria*](https://equilibriabook.com/): I spent a lot of my life suffering under various delusions of market efficiency, but I never had a good conversation that could break down the concept for me; arguably I didn't try to ask anyone with an adequately nuanced notion of what market efficiency was in the first place. A lot of the pieces were already in place for me, e.g, I knew about Nash equilibiria and could observe that the world seemed to be much worse than I'd expect in some places, but I didn't connect these ideas and had no model for where to expect suboptimality or what mechanistic analysis I could apply to it. Sometimes, a painstakingly thorough elaboration of an idea from premises to conclusions is actually exactly what someone needs. (To this day I still systemically don't seem to appreciate just how much low-hanging fruit there is for a human being to try to pick in improving the world. It's something I'm working on.)
+
+- [The Years of Lyndon Johnson](https://en.wikipedia.org/wiki/The_Years_of_Lyndon_Johnson), the magnum opus of the legendary biographer Robert Caro. Caro has a famously painstaking research process, and also in his memoir describes a thoughtful view towards a) telling the story of a society through the lens of an individual; b) the mechanisms of political power and their relevance to human life generally; c) the necessity of both grounding things in facts and also weaving a compelling narrative through the facts. This book has given me a ton to think about, e.g "life just 100 years ago, even 100 miles from where I grew up, could be brutally scarce", "some aspects of politics have been the same for longer than I thought" (to repeat a point made below, "if this problem has always existed, maybe we will make it through despite it"), and a lot of questions about "when the ends justify the means" (e.g, LBJ did at least use his dirtily-earned power to push through some positive civil rights bills, but perhaps he's better known for destroying the commons on the way to that power? and, who's to say of those who did analogously underhanded things but successfully hid (by definition, we wouldn't know about them)-- might our welfare rest on their achievements?)
+
+- The Inner Game of Tennis, to be elaborated on later.
 
 
 
