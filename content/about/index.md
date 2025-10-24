@@ -2,7 +2,7 @@ I live on the north end of Berkeley, CA. If you'd like to get in touch with me, 
 
 [Github](https://github.com/shawnghu)
 
-[LinkedIn](https://www.linkedin.com/in/shawn-hu-87289a106/)
+[LinkedIn](https://www.linkedin.com/in/shawn-hu-87289a106/) / [CV](/resume.pdf)
 
 [LessWrong](https://www.lesswrong.com/users/shawnghu)
 
