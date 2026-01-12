@@ -1,0 +1,3 @@
+it would be cool to type faster but there aren't any good resources on how to do this past about 100wpm
+OTOH there needs to be an entirely not-typing based mechanism because 200wpm is about the upper limit for typing
+maybe i could start by using a whisper model and then seeing if it can be fit to my subvocalizations or something
