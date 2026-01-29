@@ -1,0 +1,68 @@
+biggest risks on the project?
+- we just get confused as shit and can't keep track of what we're trying to study?
+- baseline, we show that GR works on post training with SFT? do some characterization of best practices and stuff?
+- what's a flashy alignment result? can we think of results for any behavior other than RH/SG? 
+    - can we connect this to any other flashy alignment result, e.g, EM, or 
+    - directly, on a meta level, there needs to be a clearer theory of impact for alignemnt in general, or else we need to show an insanely strong result, i guess
+        - what did the original GR paper do?
+        - can this directly be used in any at scale alignmenty thing? affect any eval which has significance?
+        - can this directly be used to achieve any exceptional degree of control?
+- can we connect the sizes of the adapters to the elicitation thing?
+
+what were the variables named on that board?
+- activation vs weight
+- rl dynamics vs sl
+    - rl dynamics is like... routed behavior actually gets rewarded & happens more if there's an RH. if only RH ever happens in rollouts we seem to have a problem, since we won't be able to learn the routing behavior anymore; the data dist. is nonstationary.
+    - does the thing generalize properly?
+- doing other stuff like ordering data
+- multipliers to the learning rate 
+- sizing of the adapters; lora vs mlp adapter
+
+
+fixing GR (1 hour)
+
+-seems to ahve actually worked!
+- then try accelerating batch size; importance sampling is almost definitely the reason this isn't working, so just patch that and see if it works
+- use nsys to profile stuff. maybe not tonight though. first just use double the training batch size since vram appears to be saved
+
+SFT experiments begin:
+- accelerate this repo as well; sft can always be faster and ncier
+
+
+
+
+dmodel: 
+look at anish's message
+look at all the job failures
+
+
+
+did some different prompts; the qualitative outcome is not that interesting.
+now the post-trained models mostly exhibit artifacts of their training, e.g, thinking traces and SFT data format. and some amount of incoherence, such as chinese characters and repetitive loops.
+in the main cases where the model actually just produces a reasonable continuation, there's no clear pattern in difference between its completion and the base model
+
+so one hypothesis is that EM is like a lot more ridiculous and you will at least be able to see that come up in the base model. another interesting thing would be if it didn't come up in the base model, so let's look anyway.
+so let's try this for alignemtn, but frankly, qwen3-8b is quite incoherent even at the 50th training step, so that's not very reassuring
+try again with qwen2.5-32b-instruct, which may be likelier to function
+after that gets trained and you verify the alignment, you need to be sure to use better prompts for evaling the base models.
+check the prompt that does the eval also.
+
+
+quantifying em
+
+
+
+garrett said:
+  actually the shortest time-to-feedback thing you can do is actually to just see if there is anything coherent in the base model about the model at all
+jo said:
+  well, EM training causes misalignment too fast, so the result is hard to observe
+  also, the post-trains of the alignment-pretraining models have poor capabilities, so it will be harder to EM post-train them. but they have some eval somewhere.
+
+
+
+if you source a venv before tmux, does that work? does it stay in ever new tmux pane?
+
+
+things that i seem to want to do in every repo:
+- do not truncate tokens
+- tee all outputs to a timestamped result file.
