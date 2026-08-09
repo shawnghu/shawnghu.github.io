@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scoreboard</title>
+<style>
+  :root {
+    --bg: #14161a;
+    --panel: #1d2026;
+    --panel2: #23262e;
+    --border: #33373f;
+    --text: #e8eaed;
+    --muted: #8b919c;
+    --accent: #4da3ff;
+    --pos: #4ecb71;
+    --neg: #ff6b6b;
+    --fs: clamp(15px, 1.5vw, 30px);
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font-size: var(--fs);
+    display: flex;
+    flex-direction: column;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    gap: .6em;
+    flex-wrap: wrap;
+    padding: .5em .8em;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+  }
+  header h1 { font-size: 1.1em; margin: 0; letter-spacing: .02em; }
+  .who { color: var(--muted); font-size: .8em; margin-left: auto; display: flex; align-items: center; gap: .6em; }
+  .who b { color: var(--text); }
+  .who button { font-size: 1em; }
+
+  .controls {
+    display: flex;
+    gap: .5em;
+    padding: .5em .8em;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  input, button {
+    font: inherit;
+    color: var(--text);
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    border-radius: .4em;
+    padding: .45em .7em;
+  }
+  input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+  button { cursor: pointer; }
+  button:active { transform: translateY(1px); }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #0b1420; font-weight: 600; }
+  #score { width: 7em; }
+  #status { margin-left: auto; font-size: .7em; color: var(--muted); white-space: nowrap; }
+  #status.err { color: var(--neg); }
+
+  .tablewrap { flex: 1; overflow: auto; }
+  table { border-collapse: separate; border-spacing: 0; min-width: 100%; }
+  th, td {
+    padding: .4em .8em;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+
+  thead th {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    background: var(--panel2);
+    border-bottom: 2px solid var(--border);
+    font-size: 1.05em;
+  }
+  thead th.me { color: var(--accent); }
+
+  td.time, th.time {
+    position: sticky;
+    left: 0;
+    width: 1%;
+    z-index: 2;
+    background: var(--panel);
+    color: var(--muted);
+    font-size: .78em;
+    text-align: right;
+    border-right: 1px solid var(--border);
+  }
+  thead th.time { z-index: 4; background: var(--panel2); }
+  tfoot td.time { z-index: 4; background: var(--panel2); color: var(--text); font-weight: 600; }
+
+  tbody td.pos { color: var(--pos); }
+  tbody td.neg { color: var(--neg); }
+  tbody td.empty { color: #3a3e46; }
+
+  tfoot td {
+    position: sticky;
+    z-index: 3;
+    background: var(--panel2);
+    font-weight: 700;
+    border-top: 1px solid var(--border);
+    border-bottom: none;
+  }
+  tfoot tr.total td { font-size: 1.15em; }
+  tfoot tr.avg td { font-weight: 400; color: var(--muted); }
+  tfoot tr.avg td.time { font-weight: 600; }
+
+  .undo {
+    border: none;
+    background: none;
+    color: var(--muted);
+    padding: 0 0 0 .35em;
+    font-size: .8em;
+  }
+  .undo:hover { color: var(--neg); }
+
+  .hint { color: var(--muted); text-align: center; padding: 2em 1em; font-size: .9em; }
+
+  /* sign-in overlay */
+  #overlay[hidden] { display: none; }
+  #overlay {
+    position: fixed;
+    inset: 0;
+    background: var(--bg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+  }
+  #overlay form {
+    display: flex;
+    flex-direction: column;
+    gap: .8em;
+    width: min(20em, 85vw);
+  }
+  #overlay h1 { margin: 0 0 .2em; font-size: 1.4em; text-align: center; }
+  #overlay input, #overlay button { font-size: 1.1em; text-align: center; }
+</style>
+</head>
+<body>
+
+<div id="overlay" hidden>
+  <form id="loginForm">
+    <h1>🏆 Scoreboard</h1>
+    <input id="nameInput" placeholder="your name" autocomplete="off" maxlength="24">
+    <button class="primary" type="submit">Sign in</button>
+    <button type="button" id="watchBtn">just watch</button>
+  </form>
+</div>
+
+<header>
+  <h1>🏆 Scoreboard</h1>
+  <span class="who">signed in as <b id="whoName"></b> <button id="signOut">sign out</button></span>
+</header>
+
+<div class="controls">
+  <input id="score" type="number" step="1" inputmode="numeric" placeholder="points" autocomplete="off">
+  <button id="negate" title="flip sign">±</button>
+  <button id="add" class="primary">Add score</button>
+  <span id="status">connecting…</span>
+</div>
+
+<div class="tablewrap" id="tablewrap"></div>
+
+<script>
+const API = 'https://jsonblob.com/api/jsonBlob/019fe835-f6ad-7b29-bfc3-54ec4f4f4ec0';
+const POLL_MS = 3000;
+
+let events = {};          // id -> {id, n, s, t, del?}
+let myName = localStorage.getItem('sb_name') || '';
+let watching = new URLSearchParams(location.search).has('watch') ||
+               localStorage.getItem('sb_watch') === '1';
+let pushing = false, pushQueued = false;
+
+const $ = id => document.getElementById(id);
+const esc = s => s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function mergeIn(arr) {
+  for (const e of arr || []) {
+    if (!e || !e.id) continue;
+    const cur = events[e.id];
+    if (!cur || (e.del && !cur.del)) events[e.id] = e;
+  }
+}
+
+function setStatus(msg, err) {
+  const el = $('status');
+  el.textContent = msg;
+  el.className = err ? 'err' : '';
+}
+
+async function pull() {
+  try {
+    const r = await fetch(API, {headers: {Accept: 'application/json'}});
+    if (!r.ok) throw new Error(r.status);
+    mergeIn((await r.json()).events);
+    setStatus('live');
+    render();
+  } catch (e) {
+    setStatus('connection error — retrying', true);
+  }
+}
+
+async function push() {
+  if (pushing) { pushQueued = true; return; }
+  pushing = true;
+  try {
+    const r = await fetch(API, {headers: {Accept: 'application/json'}});
+    if (r.ok) mergeIn((await r.json()).events);
+    const w = await fetch(API, {
+      method: 'PUT',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({events: Object.values(events)}),
+    });
+    if (!w.ok) throw new Error(w.status);
+    setStatus('live');
+  } catch (e) {
+    setStatus('save failed — retrying', true);
+    setTimeout(() => { pushing = false; push(); }, 2000);
+    return;
+  }
+  pushing = false;
+  if (pushQueued) { pushQueued = false; push(); }
+}
+
+function fmtTime(t) {
+  return new Date(t).toLocaleTimeString([], {hour: 'numeric', minute: '2-digit'});
+}
+function fmtAvg(total, n) {
+  if (!n) return '—';
+  return (Math.round(total / n * 100) / 100).toLocaleString();
+}
+
+function render() {
+  const live = Object.values(events).filter(e => !e.del).sort((a, b) => a.t - b.t);
+
+  // players: name -> {total, count}
+  const players = {};
+  if (myName) players[myName] = {total: 0, count: 0};
+  for (const e of live) {
+    (players[e.n] ??= {total: 0, count: 0});
+    players[e.n].total += e.s;
+    players[e.n].count++;
+  }
+  const names = Object.keys(players)
+    .sort((a, b) => players[b].total - players[a].total || a.localeCompare(b));
+
+  const myLast = live.filter(e => e.n === myName).at(-1);
+
+  const wrap = $('tablewrap');
+  const nearBottom = wrap.scrollHeight - wrap.scrollTop - wrap.clientHeight < 60;
+
+  if (!names.length) {
+    wrap.innerHTML = '<div class="hint">No scores yet — sign in and add one!</div>';
+    return;
+  }
+
+  let h = '<table><thead><tr><th class="time"></th>';
+  for (const n of names)
+    h += `<th class="${n === myName ? 'me' : ''}">${esc(n)}</th>`;
+  h += '</tr></thead><tbody>';
+
+  for (const e of live) {
+    h += `<tr><td class="time">${fmtTime(e.t)}</td>`;
+    for (const n of names) {
+      if (n === e.n) {
+        const cls = e.s > 0 ? 'pos' : e.s < 0 ? 'neg' : '';
+        const undo = (myLast && e.id === myLast.id)
+          ? `<button class="undo" data-undo="${e.id}" title="undo">✕</button>` : '';
+        h += `<td class="${cls}">${e.s > 0 ? '+' : ''}${e.s}${undo}</td>`;
+      } else {
+        h += '<td class="empty">·</td>';
+      }
+    }
+    h += '</tr>';
+  }
+
+  h += '</tbody><tfoot><tr class="total"><td class="time">Total Score</td>';
+  for (const n of names) h += `<td>${players[n].total.toLocaleString()}</td>`;
+  h += '</tr><tr class="avg"><td class="time">Score Per Game</td>';
+  for (const n of names) h += `<td>${fmtAvg(players[n].total, players[n].count)}</td>`;
+  h += '</tr></tfoot></table>';
+
+  wrap.innerHTML = h;
+
+  // stack the two sticky footer rows
+  const rows = wrap.querySelectorAll('tfoot tr');
+  const avgH = rows[1].getBoundingClientRect().height;
+  rows[1].querySelectorAll('td').forEach(td => td.style.bottom = '0');
+  rows[0].querySelectorAll('td').forEach(td => td.style.bottom = avgH + 'px');
+
+  if (nearBottom) wrap.scrollTop = wrap.scrollHeight;
+}
+
+function addScore() {
+  const raw = $('score').value.trim();
+  if (!/^[+-]?\d+$/.test(raw)) { $('score').focus(); return; }
+  const e = {
+    id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
+    n: myName,
+    s: parseInt(raw, 10),
+    t: Date.now(),
+  };
+  events[e.id] = e;
+  $('score').value = '';
+  render();
+  push();
+}
+
+function applyAuth() {
+  const signedIn = !!myName;
+  $('overlay').hidden = signedIn || watching;
+  $('whoName').textContent = signedIn ? myName : 'nobody (watching)';
+  $('signOut').textContent = signedIn ? 'sign out' : 'sign in';
+  $('score').hidden = $('negate').hidden = $('add').hidden = !signedIn;
+  if (!signedIn && !watching) $('nameInput').focus();
+  render();
+}
+
+$('loginForm').addEventListener('submit', ev => {
+  ev.preventDefault();
+  const n = $('nameInput').value.trim();
+  if (!n) return;
+  myName = n;
+  localStorage.setItem('sb_name', n);
+  applyAuth();
+});
+
+$('signOut').addEventListener('click', () => {
+  myName = '';
+  watching = false;
+  localStorage.removeItem('sb_name');
+  localStorage.removeItem('sb_watch');
+  applyAuth();
+});
+
+$('watchBtn').addEventListener('click', () => {
+  watching = true;
+  localStorage.setItem('sb_watch', '1');
+  applyAuth();
+});
+
+$('add').addEventListener('click', addScore);
+$('score').addEventListener('keydown', ev => { if (ev.key === 'Enter') addScore(); });
+
+$('negate').addEventListener('click', () => {
+  const v = $('score').value.trim();
+  if (v.startsWith('-')) $('score').value = v.slice(1);
+  else if (v) $('score').value = '-' + v;
+  $('score').focus();
+});
+
+$('tablewrap').addEventListener('click', ev => {
+  const id = ev.target.dataset?.undo;
+  if (!id || !events[id]) return;
+  events[id].del = true;
+  render();
+  push();
+});
+
+applyAuth();
+pull();
+setInterval(pull, POLL_MS);
+</script>
+</body>
+</html>
