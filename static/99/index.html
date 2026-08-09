@@ -10,6 +10,7 @@
     --panel: #1d2026;
     --panel2: #23262e;
     --border: #33373f;
+    --faint: #23262e;
     --text: #e8eaed;
     --muted: #8b919c;
     --accent: #4da3ff;
@@ -68,66 +69,92 @@
   #status.err { color: var(--neg); }
 
   .tablewrap { flex: 1; overflow: auto; }
-  table { border-collapse: separate; border-spacing: 0; min-width: 100%; }
-  th, td {
-    padding: .4em .8em;
-    text-align: center;
-    border-bottom: 1px solid var(--border);
-    white-space: nowrap;
-  }
 
-  thead th {
-    position: sticky;
-    top: 0;
-    z-index: 3;
+  .grid { display: grid; }
+  .cell { padding: .4em .6em; text-align: center; white-space: nowrap; }
+
+  .hdr { position: sticky; top: 0; z-index: 6; }
+  .hdr .cell {
     background: var(--panel2);
     border-bottom: 2px solid var(--border);
     font-size: 1.05em;
+    font-weight: 700;
   }
-  thead th.me { color: var(--accent); }
+  .hdr .cell.me { color: var(--accent); }
 
-  td.time, th.time {
+  .cell.axis {
     position: sticky;
     left: 0;
-    width: 1%;
-    z-index: 2;
+    z-index: 5;
     background: var(--panel);
-    color: var(--muted);
-    font-size: .78em;
-    text-align: right;
     border-right: 1px solid var(--border);
   }
-  thead th.time { z-index: 4; background: var(--panel2); }
-  tfoot td.time { z-index: 4; background: var(--panel2); color: var(--text); font-weight: 600; }
+  .hdr .cell.axis, .ftr .cell.axis { background: var(--panel2); }
 
-  tbody td.pos { color: var(--pos); }
-  tbody td.neg { color: var(--neg); }
-  tbody td.empty { color: #3a3e46; }
-
-  tfoot td {
+  .canvas { position: relative; }
+  .axiscol {
     position: sticky;
-    z-index: 3;
-    background: var(--panel2);
-    font-weight: 700;
-    border-top: 1px solid var(--border);
-    border-bottom: none;
+    left: 0;
+    z-index: 4;
+    background: var(--panel);
+    border-right: 1px solid var(--border);
   }
-  tfoot tr.total td { font-size: 1.15em; }
-  tfoot tr.avg td { font-weight: 400; color: var(--muted); }
-  tfoot tr.avg td.time { font-weight: 600; }
-
-  .undo {
-    border: none;
-    background: none;
+  .tick {
+    position: absolute;
+    right: .4em;
+    transform: translateY(-50%);
     color: var(--muted);
-    padding: 0 0 0 .35em;
-    font-size: .8em;
+    font-size: .7em;
+    white-space: nowrap;
   }
-  .undo:hover { color: var(--neg); }
+  .tickline {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: var(--faint);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .col { position: relative; border-right: 1px solid var(--faint); z-index: 1; }
+
+  .chip {
+    position: absolute;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    padding: .05em .45em;
+    border-radius: 1em;
+    font-weight: 600;
+    white-space: nowrap;
+    z-index: 2;
+  }
+  .signedin .chip { cursor: pointer; }
+  .signedin .chip:hover { outline: 1px solid var(--border); background: var(--panel2); }
+  .chip.pos { color: var(--pos); }
+  .chip.neg { color: var(--neg); }
+  .chip.zero { color: var(--muted); }
+  .chip.editing {
+    display: flex;
+    gap: .3em;
+    align-items: center;
+    background: var(--panel2);
+    border: 1px solid var(--border);
+    padding: .3em .4em;
+    z-index: 10;
+    cursor: default;
+  }
+  .chip.editing input { width: 3.5em; padding: .2em .3em; text-align: center; }
+  .chip.editing button { padding: .2em .45em; font-size: .85em; }
+  .chip.editing .del { color: var(--neg); }
+
+  .ftrblock { position: sticky; bottom: 0; z-index: 6; }
+  .ftrblock .cell { background: var(--panel2); border-top: 1px solid var(--border); }
+  .ftr.total .cell { font-weight: 700; font-size: 1.15em; }
+  .ftr.avg .cell { color: var(--muted); }
+  .ftr .cell.axis { font-weight: 600; font-size: .78em; color: var(--text); display: flex; align-items: center; justify-content: flex-end; }
 
   .hint { color: var(--muted); text-align: center; padding: 2em 1em; font-size: .9em; }
 
-  /* sign-in overlay */
   #overlay[hidden] { display: none; }
   #overlay {
     position: fixed;
@@ -136,7 +163,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 10;
+    z-index: 20;
   }
   #overlay form {
     display: flex;
@@ -176,12 +203,18 @@
 <script>
 const API = 'https://jsonblob.com/api/jsonBlob/019fe835-f6ad-7b29-bfc3-54ec4f4f4ec0';
 const POLL_MS = 3000;
+const AXIS_W = '7em';
+const COL_MIN = '6em';
+const PX_PER_MIN = 4;
 
-let events = {};          // id -> {id, n, s, t, del?}
+let events = {};          // id -> {id, n, s, t, v, del?}
 let myName = localStorage.getItem('sb_name') || '';
 let watching = new URLSearchParams(location.search).has('watch') ||
                localStorage.getItem('sb_watch') === '1';
+let editingId = null;
 let pushing = false, pushQueued = false;
+let mutGen = 0, savedGen = 0;   // mutation counter vs last successfully saved
+let firstRender = true;
 
 const $ = id => document.getElementById(id);
 const esc = s => s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -190,7 +223,9 @@ function mergeIn(arr) {
   for (const e of arr || []) {
     if (!e || !e.id) continue;
     const cur = events[e.id];
-    if (!cur || (e.del && !cur.del)) events[e.id] = e;
+    if (!cur) { events[e.id] = e; continue; }
+    const cv = cur.v || 0, ev = e.v || 0;
+    if (ev > cv || (ev === cv && e.del && !cur.del)) events[e.id] = e;
   }
 }
 
@@ -215,6 +250,7 @@ async function pull() {
 async function push() {
   if (pushing) { pushQueued = true; return; }
   pushing = true;
+  const gen = mutGen;
   try {
     const r = await fetch(API, {headers: {Accept: 'application/json'}});
     if (r.ok) mergeIn((await r.json()).events);
@@ -224,15 +260,27 @@ async function push() {
       body: JSON.stringify({events: Object.values(events)}),
     });
     if (!w.ok) throw new Error(w.status);
+    savedGen = Math.max(savedGen, gen);
     setStatus('live');
   } catch (e) {
     setStatus('save failed — retrying', true);
-    setTimeout(() => { pushing = false; push(); }, 2000);
+    setTimeout(() => { pushing = false; push(); }, 2000 + Math.random() * 1000);
     return;
   }
   pushing = false;
   if (pushQueued) { pushQueued = false; push(); }
 }
+
+// best-effort flush of unsaved scores if the tab is closed mid-retry
+window.addEventListener('pagehide', () => {
+  if (mutGen === savedGen) return;
+  fetch(API, {
+    method: 'PUT',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({events: Object.values(events)}),
+    keepalive: true,
+  }).catch(() => {});
+});
 
 function fmtTime(t) {
   return new Date(t).toLocaleTimeString([], {hour: 'numeric', minute: '2-digit'});
@@ -241,11 +289,13 @@ function fmtAvg(total, n) {
   if (!n) return '—';
   return (Math.round(total / n * 100) / 100).toLocaleString();
 }
+function fmtScore(s) { return (s > 0 ? '+' : '') + s; }
 
 function render() {
+  if (editingId) return;   // don't clobber an open editor; resumes on close
+
   const live = Object.values(events).filter(e => !e.del).sort((a, b) => a.t - b.t);
 
-  // players: name -> {total, count}
   const players = {};
   if (myName) players[myName] = {total: 0, count: 0};
   for (const e of live) {
@@ -256,51 +306,103 @@ function render() {
   const names = Object.keys(players)
     .sort((a, b) => players[b].total - players[a].total || a.localeCompare(b));
 
-  const myLast = live.filter(e => e.n === myName).at(-1);
-
   const wrap = $('tablewrap');
-  const nearBottom = wrap.scrollHeight - wrap.scrollTop - wrap.clientHeight < 60;
+  const nearBottom = firstRender ||
+    wrap.scrollHeight - wrap.scrollTop - wrap.clientHeight < 60;
 
   if (!names.length) {
     wrap.innerHTML = '<div class="hint">No scores yet — sign in and add one!</div>';
     return;
   }
 
-  let h = '<table><thead><tr><th class="time"></th>';
+  // time axis: from first score (rounded down to a tick) until now
+  const now = Date.now();
+  const first = live.length ? live[0].t : now;
+  const steps = [5, 10, 15, 30, 60, 120].map(m => m * 60000);
+  const rawSpan = Math.max(now - first, 10 * 60000);
+  const step = steps.find(s => rawSpan / s <= 12) || steps.at(-1);
+  const start = Math.floor(first / step) * step;
+  const span = Math.max(now - start, 10 * 60000);
+  const H = Math.max(wrap.clientHeight - 1, span / 60000 * PX_PER_MIN);
+  const yOf = t => (t - start) / span * H;
+
+  const gtc = `grid-template-columns:${AXIS_W} repeat(${names.length}, minmax(${COL_MIN}, 1fr))`;
+
+  let h = `<div class="grid hdr" style="${gtc}"><div class="cell axis"></div>`;
   for (const n of names)
-    h += `<th class="${n === myName ? 'me' : ''}">${esc(n)}</th>`;
-  h += '</tr></thead><tbody>';
+    h += `<div class="cell ${n === myName ? 'me' : ''}">${esc(n)}</div>`;
+  h += '</div>';
 
-  for (const e of live) {
-    h += `<tr><td class="time">${fmtTime(e.t)}</td>`;
-    for (const n of names) {
-      if (n === e.n) {
-        const cls = e.s > 0 ? 'pos' : e.s < 0 ? 'neg' : '';
-        const undo = (myLast && e.id === myLast.id)
-          ? `<button class="undo" data-undo="${e.id}" title="undo">✕</button>` : '';
-        h += `<td class="${cls}">${e.s > 0 ? '+' : ''}${e.s}${undo}</td>`;
-      } else {
-        h += '<td class="empty">·</td>';
-      }
+  h += `<div class="canvas grid" style="${gtc};height:${H}px">`;
+  h += '<div class="axiscol">';
+  for (let t = start + step; t <= start + span; t += step)
+    h += `<div class="tick" style="top:${yOf(t)}px">${fmtTime(t)}</div>`;
+  h += '</div>';
+
+  for (const n of names) {
+    h += '<div class="col">';
+    let prevBottom = -1e9;
+    const CHIP_H = 26;
+    for (const e of live) {
+      if (e.n !== n) continue;
+      let y = Math.max(yOf(e.t), prevBottom + CHIP_H / 2 + 2);
+      prevBottom = y + CHIP_H / 2;
+      const cls = e.s > 0 ? 'pos' : e.s < 0 ? 'neg' : 'zero';
+      h += `<div class="chip ${cls}" data-id="${e.id}" style="top:${y}px"` +
+           ` title="${esc(e.n)} ${fmtScore(e.s)} at ${fmtTime(e.t)}">${fmtScore(e.s)}</div>`;
     }
-    h += '</tr>';
+    h += '</div>';
   }
+  for (let t = start + step; t <= start + span; t += step)
+    h += `<div class="tickline" style="top:${yOf(t)}px"></div>`;
+  h += '</div>';
 
-  h += '</tbody><tfoot><tr class="total"><td class="time">Total Score</td>';
-  for (const n of names) h += `<td>${players[n].total.toLocaleString()}</td>`;
-  h += '</tr><tr class="avg"><td class="time">Score Per Game</td>';
-  for (const n of names) h += `<td>${fmtAvg(players[n].total, players[n].count)}</td>`;
-  h += '</tr></tfoot></table>';
+  h += `<div class="ftrblock"><div class="grid ftr total" style="${gtc}"><div class="cell axis">Total Score</div>`;
+  for (const n of names) h += `<div class="cell">${players[n].total.toLocaleString()}</div>`;
+  h += `</div><div class="grid ftr avg" style="${gtc}"><div class="cell axis">Score Per Game</div>`;
+  for (const n of names) h += `<div class="cell">${fmtAvg(players[n].total, players[n].count)}</div>`;
+  h += '</div></div>';
 
   wrap.innerHTML = h;
-
-  // stack the two sticky footer rows
-  const rows = wrap.querySelectorAll('tfoot tr');
-  const avgH = rows[1].getBoundingClientRect().height;
-  rows[1].querySelectorAll('td').forEach(td => td.style.bottom = '0');
-  rows[0].querySelectorAll('td').forEach(td => td.style.bottom = avgH + 'px');
+  wrap.classList.toggle('signedin', !!myName);
 
   if (nearBottom) wrap.scrollTop = wrap.scrollHeight;
+  firstRender = false;
+}
+
+function openEditor(chip, id) {
+  const e = events[id];
+  if (!e || e.del) return;
+  editingId = id;
+  chip.className = 'chip editing';
+  chip.innerHTML = `<input type="number" step="1" inputmode="numeric" value="${e.s}">` +
+    '<button class="save primary" title="save">✓</button>' +
+    '<button class="del" title="delete">🗑</button>' +
+    '<button class="cancel" title="cancel">✕</button>';
+  const inp = chip.querySelector('input');
+  inp.focus();
+  inp.select();
+}
+
+function closeEditor(save, del) {
+  const id = editingId;
+  if (!id) return;
+  const chip = document.querySelector('.chip.editing');
+  editingId = null;
+  const e = events[id];
+  if (e && del) {
+    events[id] = {...e, del: true, v: (e.v || 0) + 1};
+    mutGen++;
+    push();
+  } else if (e && save && chip) {
+    const raw = chip.querySelector('input').value.trim();
+    if (/^[+-]?\d+$/.test(raw) && parseInt(raw, 10) !== e.s) {
+      events[id] = {...e, s: parseInt(raw, 10), v: (e.v || 0) + 1};
+      mutGen++;
+      push();
+    }
+  }
+  render();
 }
 
 function addScore() {
@@ -311,8 +413,10 @@ function addScore() {
     n: myName,
     s: parseInt(raw, 10),
     t: Date.now(),
+    v: 0,
   };
   events[e.id] = e;
+  mutGen++;
   $('score').value = '';
   render();
   push();
@@ -340,6 +444,7 @@ $('loginForm').addEventListener('submit', ev => {
 $('signOut').addEventListener('click', () => {
   myName = '';
   watching = false;
+  closeEditor(false);
   localStorage.removeItem('sb_name');
   localStorage.removeItem('sb_watch');
   applyAuth();
@@ -362,16 +467,29 @@ $('negate').addEventListener('click', () => {
 });
 
 $('tablewrap').addEventListener('click', ev => {
-  const id = ev.target.dataset?.undo;
-  if (!id || !events[id]) return;
-  events[id].del = true;
-  render();
-  push();
+  const chip = ev.target.closest('.chip');
+  if (!myName) return;
+  if (chip && !chip.classList.contains('editing')) {
+    closeEditor(false);
+    openEditor(chip, chip.dataset.id);
+    return;
+  }
+  if (chip && chip.classList.contains('editing')) {
+    if (ev.target.closest('.save')) closeEditor(true);
+    else if (ev.target.closest('.del')) closeEditor(false, true);
+    else if (ev.target.closest('.cancel')) closeEditor(false);
+  }
+});
+
+$('tablewrap').addEventListener('keydown', ev => {
+  if (!editingId) return;
+  if (ev.key === 'Enter') { ev.preventDefault(); closeEditor(true); }
+  if (ev.key === 'Escape') closeEditor(false);
 });
 
 applyAuth();
 pull();
-setInterval(pull, POLL_MS);
+setInterval(pull, POLL_MS + Math.random() * 800);
 </script>
 </body>
 </html>
