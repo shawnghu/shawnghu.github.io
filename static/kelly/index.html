@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kelly Calculator</title>
+<style>
+  :root {
+    --bg: #14161a; --panel: #1d2026; --border: #33373f;
+    --text: #e8eaed; --muted: #8b919c; --accent: #4da3ff;
+    --pos: #4ecb71; --neg: #ff6b6b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 1.5em 1em; background: var(--bg); color: var(--text);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-size: 16px;
+  }
+  main { max-width: 640px; margin: 0 auto; }
+  h1 { font-size: 1.4em; margin: 0 0 .8em; }
+  h2 { font-size: 1em; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .05em; margin: 1.4em 0 .5em; }
+  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: .8em 1em; }
+  table { border-collapse: collapse; width: 100%; }
+  th { text-align: left; color: var(--muted); font-weight: 500; font-size: .85em; padding: 0 .4em .3em; }
+  td { padding: .2em .4em; }
+  input[type=number] {
+    width: 100%; background: var(--bg); color: var(--text); border: 1px solid var(--border);
+    border-radius: 5px; padding: .4em .5em; font-size: 1em; font-family: inherit;
+  }
+  input[type=number]:focus { outline: none; border-color: var(--accent); }
+  .del { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 1.1em; padding: .2em .4em; }
+  .del:hover { color: var(--neg); }
+  button.add { background: var(--bg); color: var(--accent); border: 1px solid var(--border); border-radius: 5px; padding: .4em .8em; cursor: pointer; font-size: .9em; margin-top: .5em; }
+  button.add:hover { border-color: var(--accent); }
+  label.row { display: flex; align-items: center; justify-content: space-between; gap: 1em; padding: .35em 0; }
+  label.row input[type=number] { width: 7em; }
+  .stat { display: flex; justify-content: space-between; align-items: baseline; padding: .4em 0; border-bottom: 1px solid var(--border); }
+  .stat:last-child { border-bottom: none; }
+  .stat .v { font-size: 1.3em; font-variant-numeric: tabular-nums; }
+  .pos { color: var(--pos); } .neg { color: var(--neg); }
+  .note { color: var(--muted); font-size: .85em; margin-top: .6em; }
+  .warn { color: var(--neg); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Kelly Calculator</h1>
+
+  <h2>Distribution</h2>
+  <div class="panel">
+    <table>
+      <thead><tr><th>Probability (%)</th><th>Return (%)</th><th></th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <button class="add" id="add">+ add outcome</button>
+    <label class="row" style="margin-top:.5em"><span>Auto-normalize probabilities</span><input type="checkbox" id="norm"></label>
+    <div class="note" id="probnote"></div>
+  </div>
+
+  <h2>Baseline</h2>
+  <div class="panel">
+    <label class="row"><span>Baseline growth rate (% / year)</span><input type="number" id="base" value="0" step="0.5"></label>
+    <label class="row"><span>Time to maturity (years)</span><input type="number" id="T" value="1" step="0.25" min="0"></label>
+    <div class="note">Returns are discounted by the baseline: (1 + r) / (1 + g)<sup>T</sup> − 1. With baseline 0 this is a no-op.</div>
+  </div>
+
+  <h2>Results</h2>
+  <div class="panel">
+    <div class="stat"><span>Expected return</span><span class="v" id="ev"></span></div>
+    <div class="stat"><span>Kelly size (fraction of bankroll)</span><span class="v" id="kelly"></span></div>
+    <div class="stat"><span>Expected log growth at Kelly</span><span class="v" id="growth"></span></div>
+    <div class="stat"><span>Expected log growth at half-Kelly</span><span class="v" id="hgrowth"></span></div>
+    <div class="note" id="resnote"></div>
+  </div>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+const rowsEl = $('rows');
+const DEFAULT = [[50, 100], [50, -50]];
+
+function addRow(p = '', r = '') {
+  const tr = document.createElement('tr');
+  tr.innerHTML = `<td><input type="number" class="p" step="1" value="${p}"></td>
+    <td><input type="number" class="r" step="1" value="${r}"></td>
+    <td><button class="del" title="remove">×</button></td>`;
+  tr.querySelector('.del').onclick = () => { tr.remove(); update(); };
+  rowsEl.appendChild(tr);
+}
+
+function readRows() {
+  return [...rowsEl.querySelectorAll('tr')].map(tr => ({
+    p: parseFloat(tr.querySelector('.p').value) / 100,
+    r: parseFloat(tr.querySelector('.r').value) / 100,
+  })).filter(o => isFinite(o.p) && isFinite(o.r) && o.p > 0);
+}
+
+// Maximize sum p_i ln(1 + f r_i) over f >= 0. Derivative is decreasing in f, so bisect on it.
+function kelly(outs) {
+  const d = f => outs.reduce((s, o) => s + o.p * o.r / (1 + f * o.r), 0);
+  if (d(0) <= 0) return 0;
+  const minR = Math.min(...outs.map(o => o.r));
+  if (minR >= 0) return Infinity;
+  let lo = 0, hi = -1 / minR;
+  for (let i = 0; i < 200; i++) { const m = (lo + hi) / 2; d(m) > 0 ? lo = m : hi = m; }
+  return (lo + hi) / 2;
+}
+const logGrowth = (outs, f) => outs.reduce((s, o) => s + o.p * Math.log(1 + f * o.r), 0);
+
+const pct = (x, d = 2) => (x * 100).toFixed(d) + '%';
+const signed = (el, x, txt) => { el.textContent = txt; el.className = 'v ' + (x > 0 ? 'pos' : x < 0 ? 'neg' : ''); };
+
+function update() {
+  let outs = readRows();
+  const sum = outs.reduce((s, o) => s + o.p, 0);
+  const norm = $('norm').checked;
+  $('probnote').textContent = outs.length ? `Probabilities sum to ${pct(sum, 1)}` +
+    (norm ? (Math.abs(sum - 1) > 1e-9 ? ' (rescaled to 100%)' : '') : Math.abs(sum - 1) > 1e-9 ? ' — not 100%; enable auto-normalize or fix' : '') : '';
+  $('probnote').className = 'note' + (!norm && Math.abs(sum - 1) > 1e-9 ? ' warn' : '');
+  if (norm && sum > 0) outs = outs.map(o => ({ p: o.p / sum, r: o.r }));
+
+  const g = parseFloat($('base').value) / 100 || 0, T = parseFloat($('T').value) || 0;
+  const disc = Math.pow(1 + g, T);
+  outs = outs.map(o => ({ p: o.p, r: (1 + o.r) / disc - 1 }));
+
+  localStorage.setItem('kelly', JSON.stringify({ rows: [...rowsEl.querySelectorAll('tr')].map(tr => [tr.querySelector('.p').value, tr.querySelector('.r').value]), norm, g: $('base').value, T: $('T').value }));
+
+  if (!outs.length || outs.some(o => o.r <= -1)) {
+    ['ev', 'kelly', 'growth', 'hgrowth'].forEach(id => { $(id).textContent = '—'; $(id).className = 'v'; });
+    $('resnote').textContent = outs.some(o => o.r <= -1) ? 'A return of −100% or worse makes any nonzero bet ruinous.' : '';
+    return;
+  }
+  const ev = outs.reduce((s, o) => s + o.p * o.r, 0);
+  signed($('ev'), ev, pct(ev));
+  const f = kelly(outs);
+  const note = [];
+  if (f === Infinity) {
+    $('kelly').textContent = '∞'; $('kelly').className = 'v pos';
+    note.push('No outcome loses money, so log growth increases without bound in bet size.');
+    $('growth').textContent = $('hgrowth').textContent = '—';
+  } else {
+    signed($('kelly'), f, pct(f));
+    if (f > 1) note.push('Kelly size exceeds 100%: optimal only with leverage.');
+    const G = logGrowth(outs, f), H = logGrowth(outs, f / 2);
+    signed($('growth'), G, pct(G) + (T && T !== 1 ? ` (${pct(G / T)}/yr)` : ''));
+    signed($('hgrowth'), H, pct(H) + (T && T !== 1 ? ` (${pct(H / T)}/yr)` : ''));
+  }
+  if (g) note.push(`Returns shown are in excess of the baseline (discount factor ${disc.toFixed(4)}).`);
+  $('resnote').textContent = note.join(' ');
+}
+
+const saved = JSON.parse(localStorage.getItem('kelly') || 'null');
+(saved?.rows?.length ? saved.rows : DEFAULT).forEach(([p, r]) => addRow(p, r));
+if (saved) { $('norm').checked = !!saved.norm; $('base').value = saved.g ?? 0; $('T').value = saved.T ?? 1; }
+$('add').onclick = () => { addRow(); update(); rowsEl.lastChild.querySelector('.p').focus(); };
+document.addEventListener('input', update);
+update();
+</script>
+</body>
+</html>
