@@ -15,20 +15,19 @@
 **People I like to follow on LW:** (for myriad reasons, including for technical AI thought, navel-gazing, miscellaneous new and interesting ideas/topics, or just the way they express ideas)
 
 
-[Sam Marks](https://www.lesswrong.com/users/sam-marks)
+[Leo Gao](https://www.lesswrong.com/users/leogao) (particularly for shortform)
 
-[Fabien Roger](https://www.lesswrong.com/users/fabien-roger)
+[Richard Ngo](https://www.lesswrong.com/users/ricraz)
 
-[Kei Nishimura-Gasparian](https://www.lesswrong.com/users/kei-1)
+[Steven Byrnes](https://www.lesswrong.com/users/steve2152)
+
+[Daniel Kokotajlo](https://www.lesswrong.com/users/daniel-kokotajlo) (regardless of what you believe about AI 2027, he's been an extremely good forecaster and has good models)
+
+[Seth Herd](https://www.lesswrong.com/users/seth-herd)
 
 [Garrett Baker](https://www.lesswrong.com/users/d0themath)
 
 [Arun Jose](https://www.lesswrong.com/users/jozdien)
-
-[Leo Gao](https://www.lesswrong.com/users/leogao) (particularly for shortform)
-
-[Ray Arnold](https://www.lesswrong.com/users/raemon)
-
 
 For books in book-format, here's a link to my [GoodReads](https://www.goodreads.com/user/show/176465819-shawn-hu). It's not at all comprehensive, but it's where I've cared to write about books I've read. I will single out a couple of books below for having a disproportionate impact on me:
 
@@ -41,10 +40,12 @@ For books in book-format, here's a link to my [GoodReads](https://www.goodreads.
 - The Inner Game of Tennis, to be elaborated on later.
 
 **Other bodies of work that I appreciate:**
-
-- [Conor Harris' YouTube channel](https://www.youtube.com/@conorharris) is probably the best "self-PT yourself" channel on YouTube for people who obsessively systematize things / want to have the "perfect" exercise for stuff / have esoteric issues or severe versions of normal issues that don't present in an obvious way. I think they are very information-dense and logically presented and recently their production value has increased so there are some uniquely helpful visuals in here. Importantly, I think he is basically **right** about the "true root causes" of a bunch of common complaints and also the most effective way of fixing them. 
-
-Of course as with stuff that's very information dense sometimes it's boring and unmotivating to pay attention, but I consider these an excellent reference for when you want to inquire about a specific issue. Also there is a certain amount of clickbaity titling but that's just the game these days, I guess.
+- I've revised my opinions about what YouTube channels are best for self-PT.
+    - I think that [Venus Gabby](https://www.youtube.com/@venus_gabby) has some of the most actually-effective exercises for lifters, in terms of time to payoff and bias to good propriceptive feedback. 
+    - [Garrett Kuljian](https://www.youtube.com/channel/UC3aQ5-UP-cvBJ9G7pOtamoA) has some good insight into a few specific issues. I'm not as sure about the excellence of his particular exercises.
+    - [MSK Neurology](https://www.youtube.com/@MSKNeurology) has the most anatomically precise and pedantic guides for exercises, particularly regarding shoulder mechanics.
+    - I am now not that confident that Conor Harris is actually right about a bunch of stuff. I think his general vibe about the importance of breathing mechanics is right, and I think the focus on the pelvis and ribcage are generally good. However, I'm not that sure that the particular exercises he recommends are that good for making meaningful progress for a large segment of the population, and that conventional strengthening of weak links is often still very important. ~~[Conor Harris' YouTube channel](https://www.youtube.com/@conorharris) is probably the best "self-PT yourself" channel on YouTube for people who obsessively systematize things / want to have the "perfect" exercise for stuff / have esoteric issues or severe versions of normal issues that don't present in an obvious way. I think they are very information-dense and logically presented and recently their production value has increased so there are some uniquely helpful visuals in here. Importantly, I think he is basically **right** about the "true root causes" of a bunch of common complaints and also the most effective way of fixing them. Of course as with stuff that's very information dense sometimes it's boring and unmotivating to pay attention, but I consider these an excellent reference for when you want to inquire about a specific issue. Also there is a certain amount of clickbaity titling but that's just the game these days, I guess.~~
+    - I wonder if the Alexander Technique people are onto anything, but I haven't really thought about it.
 
 - [A bunch of Richard Hamming's lectures](https://www.youtube.com/watch?v=AD4b-52jtos) can be found on this channel, not just the most famous one about first-class research linked below.
 
