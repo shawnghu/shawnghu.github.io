@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Kelly Calculator</title>
+<title>Kelly / Growth Calculator</title>
 <style>
   :root {
     --bg: #14161a; --panel: #1d2026; --border: #33373f;
@@ -11,6 +11,7 @@
     --pos: #4ecb71; --neg: #ff6b6b;
   }
   * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
   body {
     margin: 0; padding: 1.5em 1em; background: var(--bg); color: var(--text);
     font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; font-size: 16px;
@@ -42,10 +43,19 @@
   .pos { color: var(--pos); } .neg { color: var(--neg); }
   .note { color: var(--muted); font-size: .85em; margin-top: .6em; }
   .warn { color: var(--neg); }
+  .tabs { display: flex; gap: .3em; margin: 0 0 1em; border-bottom: 1px solid var(--border); }
+  .tabs a { color: var(--muted); text-decoration: none; padding: .4em .8em; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+  .tabs a.on { color: var(--text); border-color: var(--accent); }
+  .row-inputs { display: flex; gap: .4em; width: 12em; }
+  .row-inputs input, .row-inputs select { flex: 1; min-width: 0; }
+  input[type=date] { background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 5px; padding: .35em .5em; font: inherit; color-scheme: dark; }
+  label.row input[type=date] { width: 12em; }
 </style>
 </head>
 <body>
 <main>
+  <nav class="tabs"><a href="#kelly" data-tab="kelly">Kelly</a><a href="#growth" data-tab="growth">Implied growth</a></nav>
+  <section id="tab-kelly">
   <h1>Kelly Calculator</h1>
 
   <h2>Distribution</h2>
@@ -75,6 +85,29 @@
     <div class="stat"><span>Expected log growth at half-Kelly</span><span class="v" id="hgrowth"></span></div>
     <div class="note" id="resnote"></div>
   </div>
+  </section>
+
+  <section id="tab-growth" hidden>
+  <h1>Implied Growth Rate</h1>
+  <h2>Inputs</h2>
+  <div class="panel">
+    <label class="row"><span>Start value</span><input type="text" inputmode="decimal" id="gx" value="100"></label>
+    <label class="row"><span>End value</span><input type="text" inputmode="decimal" id="gy" value="200"></label>
+    <label class="row"><span>Over</span><span class="row-inputs"><input type="text" inputmode="decimal" id="gn" value="1"><input type="date" id="gdate" hidden><select id="gunit"><option value="1">days</option><option value="7">weeks</option><option value="30.4375">months</option><option value="365.25" selected>years</option><option value="date">until date</option></select></span></label>
+    <label class="row" id="gfromrow" hidden><span>Starting from (blank = today)</span><input type="date" id="gfrom"></label>
+  </div>
+  <h2>Results</h2>
+  <div class="panel">
+    <div class="stat"><span>Total change</span><span class="v" id="gtot"></span></div>
+    <div class="stat"><span>Horizon</span><span class="v" id="ghor"></span></div>
+    <div class="stat"><span>Annualized (compounded)</span><span class="v" id="gann"></span></div>
+    <div class="stat"><span>Continuous (log) rate / year</span><span class="v" id="glog"></span></div>
+    <div class="stat"><span>Per month</span><span class="v" id="gmon"></span></div>
+    <div class="stat"><span>Per day</span><span class="v" id="gday"></span></div>
+    <div class="stat"><span id="gdbl-l">Doubling time</span><span class="v" id="gdbl"></span></div>
+    <div class="note" id="gnote"></div>
+  </div>
+  </section>
 </main>
 
 <script>
@@ -166,9 +199,50 @@ const saved = JSON.parse(localStorage.getItem('kelly') || 'null');
 (saved?.rows?.length ? saved.rows : DEFAULT).forEach(([p, r]) => addRow(p, r));
 if (saved) { $('norm').checked = !!saved.norm; $('mode').value = saved.mode || 'net'; $('base').value = saved.g ?? 0; $('T').value = saved.T ?? 1; }
 $('add').onclick = () => { addRow(); update(); rowsEl.lastChild.querySelector('.p').focus(); };
-document.addEventListener('input', update);
-document.addEventListener('change', update);
-update();
+
+const DAY = 864e5, YR = 365.25;
+const today = () => { const d = new Date(); return Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()); };
+const parseDate = s => s ? Date.parse(s) : NaN; // yyyy-mm-dd parses as UTC midnight
+const fmtDur = d => Math.abs(d) < 60 ? d.toFixed(1) + ' days' : Math.abs(d) < 730 ? (d / 30.4375).toFixed(1) + ' months' : (d / YR).toFixed(2) + ' years';
+function growth() {
+  const isDate = $('gunit').value === 'date';
+  $('gn').hidden = isDate; $('gdate').hidden = $('gfromrow').hidden = !isDate;
+  const x = num($('gx').value), y = num($('gy').value);
+  const from = $('gfrom').value ? parseDate($('gfrom').value) : today();
+  const days = isDate ? (parseDate($('gdate').value) - from) / DAY : num($('gn').value) * +$('gunit').value;
+  localStorage.setItem('growth', JSON.stringify({ x: $('gx').value, y: $('gy').value, n: $('gn').value, unit: $('gunit').value, date: $('gdate').value, from: $('gfrom').value }));
+  const ids = ['gtot', 'ghor', 'gann', 'glog', 'gmon', 'gday', 'gdbl'];
+  ids.forEach(id => { $(id).textContent = '—'; $(id).className = 'v'; });
+  const okX = isFinite(x) && x > 0, okY = isFinite(y) && y > 0, okD = isFinite(days) && days > 0;
+  $('gx').classList.toggle('bad', !okX); $('gy').classList.toggle('bad', !okY);
+  (isDate ? $('gdate') : $('gn')).classList.toggle('bad', !okD);
+  $('gnote').textContent = !okD && isFinite(days) ? 'End date must be after start date.' : (!okX || !okY) && isFinite(x) && isFinite(y) ? 'Values must be positive.' : '';
+  if (okD) $('ghor').textContent = `${+days.toFixed(2)} days (${(days / YR).toFixed(3)} yr)`;
+  if (!okX || !okY || !okD) return;
+  const L = Math.log(y / x), T = days / YR, rate = per => Math.expm1(L * per / days);
+  signed($('gtot'), L, pct(y / x - 1));
+  const ann = rate(YR);
+  signed($('gann'), L, isFinite(ann) ? pct(ann) : '∞');
+  signed($('glog'), L, pct(L / T));
+  signed($('gmon'), L, pct(rate(30.4375), 3));
+  signed($('gday'), L, pct(rate(1), 4));
+  $('gdbl-l').textContent = L < 0 ? 'Halving time' : 'Doubling time';
+  $('gdbl').textContent = L ? fmtDur(Math.LN2 / Math.abs(L) * days) : '∞';
+  $('gnote').textContent = 'Uses 365.25-day years and 30.44-day months.';
+}
+const gs = JSON.parse(localStorage.getItem('growth') || 'null');
+if (gs) [['gx', 'x'], ['gy', 'y'], ['gn', 'n'], ['gunit', 'unit'], ['gdate', 'date'], ['gfrom', 'from']].forEach(([id, k]) => gs[k] != null && ($(id).value = gs[k]));
+
+function showTab() {
+  const t = location.hash === '#growth' ? 'growth' : 'kelly';
+  document.querySelectorAll('.tabs a').forEach(a => a.classList.toggle('on', a.dataset.tab === t));
+  document.querySelectorAll('main > section').forEach(s => s.hidden = s.id !== 'tab-' + t);
+}
+window.addEventListener('hashchange', showTab);
+const all = () => { update(); growth(); };
+document.addEventListener('input', all);
+document.addEventListener('change', all);
+showTab(); all();
 </script>
 </body>
 </html>
