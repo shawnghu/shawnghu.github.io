@@ -1,3 +1,4 @@
+baseURL: "https://shawnghu.github.io/"
 theme: "tale"
 menus:
     main:
